@@ -1,8 +1,8 @@
 import unittest
-from utils.riichi.yaku_han import convert_tile_num
+from utils.riichi.yaku_han import convert_tile_to_num
 
 class TestConvertTileNum(unittest.TestCase):
-    def test_convert_tile_num(self):
+    def test_convert_tile_to_num(self):
         test_cases = {
             "0m": 4,
             "1m": 0,
@@ -44,7 +44,7 @@ class TestConvertTileNum(unittest.TestCase):
         }
         for tile_str, expected_num in test_cases.items():
             with self.subTest(tile_str=tile_str):
-                self.assertEqual(convert_tile_num(tile_str), expected_num)
+                self.assertEqual(convert_tile_to_num(tile_str), expected_num)
 
 if __name__ == '__main__':
     unittest.main()
