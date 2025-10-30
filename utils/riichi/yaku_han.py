@@ -1,4 +1,4 @@
-from utils.pair_split import seven_pair_split, common_pair_split
+from utils.pair_split import seven_pair_split, common_pair_split, Triplet, Sequence, Quad, Pair
 
 def convert_tile_to_num(tile):
     """Convert tile string to tile number.
@@ -9,6 +9,8 @@ def convert_tile_to_num(tile):
     Returns:
         int: Tile number (0-33). 0~8 are manzu, 9~17 are pinzu, 18~26 are souzu, 27~33 are honors.
     """
+    if tile == "-":
+        return -1
     suit_dict = {'m': 0, 'p': 9, 's': 18, 'z': 27}
     number = int(tile[0])
     suit = tile[1]
@@ -33,23 +35,37 @@ def convert_hand_to_num(hand):
     
     return [convert_tile_to_num(tile) for tile in hand]
 
-def is_pinfu(pair_split, hu_num, setting):
+def is_menzenqing(hand_num, furo_num, hu_num):
+    for meld in furo_num:
+        if len(meld) == 3 or (-1 not in meld):
+            return False
+    return True
+
+def is_pinfu(pair_split, hu_num, settings):
     """Check is pinfu.
     
     Args:
         pair_split: number[][] 分割好的牌型
         hu_num: 胡的牌（数字形式）
-        setting: 设置信息，包含以下字段：
+        settings: 设置信息，包含以下字段：
             dora: str[] 宝牌列表
             dora_num: number[] 宝牌数字列表
             ura_dora: str[] 里宝牌列表
             ura_dora_num: number[] 里宝牌数字列表
-            riichi: boolean 是否立直
             player_wind: str 自风
             player_wind_num: number 自风数字
             phase_wind: str 场风
             phase_wind_num: number 场风数字
             round: number 第几巡
+            riichi: number 是否立直，1为立直，2为两立直
+            ippatus: boolean 是否一发
+            after_a_kan: boolean 是否岭上
+            robbing_a_kan: boolean 是否抢杠
+            under_the_sea: boolean 是否海底
+            under_the_river: boolean 是否河底
+            ron: boolean 是否荣和
+
+
     
     Returns:
         bool
@@ -60,19 +76,16 @@ def is_pinfu(pair_split, hu_num, setting):
     
     has_pair = False
     for meld in pair_split:
-        if len(meld) == 2:
+        if isinstance(meld, Pair):
             if has_pair:
                 return False # Only allow one pair
             has_pair = True
-            if meld[0] == setting["player_wind_num"] or \
-               meld[0] == setting["phase_wind_num"] or \
+            if meld[0] == settings["player_wind_num"] or \
+               meld[0] == settings["phase_wind_num"] or \
                meld[0] in [31, 32, 33]:
                 return False # Yaku tile are not allowed
-        elif len(meld) != 3:
-            return False  # Only allow chii meld
-        else:
-            if meld[0] == meld[1]:
-                return False  # Only allow chii meld
+        elif not isinstance(meld, Sequence):
+            return False
     
     for meld in pair_split:
         if len(meld) == 3:
@@ -81,7 +94,7 @@ def is_pinfu(pair_split, hu_num, setting):
     
     return False
 
-def is_tanyao(pair_split, hu_num, setting):
+def is_tanyao(pair_split, hu_num, settings):
     disallow_nums = [0, 8, 9, 17, 18, 26, 27, 28, 29, 30, 31, 32, 33]
     for meld in pair_split:
         for tile in meld:
@@ -89,41 +102,101 @@ def is_tanyao(pair_split, hu_num, setting):
                 return False
     return True
 
-def is_yakuhai_player_wind(pair_split, hu_num, setting):
+def is_yakuhai_player_wind(pair_split, hu_num, settings):
     for meld in pair_split:
-        if len(meld) >= 3:
-            if all([tile == setting["player_wind_num"] for tile in meld]):
+        if isinstance(meld, Triplet) or isinstance(meld, Quad):
+            if meld.num == settings["player_wind_num"]:
                 return True
     return False
 
-def is_yakuhai_phase_wind(pair_split, hu_num, setting):
+def is_yakuhai_phase_wind(pair_split, hu_num, settings):
     for meld in pair_split:
-        if len(meld) >= 3:
-            if all([tile == setting["phase_wind_num"] for tile in meld]):
+        if isinstance(meld, Triplet) or isinstance(meld, Quad):
+            if meld.num == settings["phase_wind_num"]:
                 return True
     return False
 
-def is_yakuhai_chuu(pair_split, hu_num, setting):
+def is_yakuhai_chuu(pair_split, hu_num, settings):
     for meld in pair_split:
-        if len(meld) >= 3:
-            if all([tile == 31 for tile in meld]):
+        if isinstance(meld, Triplet) or isinstance(meld, Quad):
+            if meld.num == 31:
                 return True
     return False
 
-def is_yakuhai_hatsu(pair_split, hu_num, setting):
+def is_yakuhai_hatsu(pair_split, hu_num, settings):
     for meld in pair_split:
-        if len(meld) >= 3:
-            if all([tile == 32 for tile in meld]):
+        if isinstance(meld, Triplet) or isinstance(meld, Quad):
+            if meld.num == 32:
                 return True
     return False
 
-def is_yakuhai_shiro(pair_split, hu_num, setting):
+def is_yakuhai_shiro(pair_split, hu_num, settings):
     for meld in pair_split:
-        if len(meld) >= 3:
-            if all([tile == 33 for tile in meld]):
+        if isinstance(meld, Triplet) or isinstance(meld, Quad):
+            if meld.num == 33:
                 return True
     return False
 
+def is_riichi(pair_split, hu_num, settings):
+    return (settings["riichi"] == 1)
+
+def is_ippatus(pair_split, hu_num, settings):
+    return settings["ippatus"]
+
+def is_fully_concealed_hands(pair_split, hu_num, settings):
+    return (not settings["ron"])
+
+def is_pure_double_sequence(pair_split, hu_num, settings):
+    meld_count = []
+    for meld in pair_split:
+        if len(meld) == 3:
+            if meld[0] != meld[1] and meld[1] != meld[2]:
+                if meld in meld_count:
+                    return True
+                meld_count.append(meld)
+    return False
+
+def is_after_a_kan(pair_split, hu_num, settings):
+    return settings["after_a_kan"]
+
+def is_robbing_a_kan(pair_split, hu_num, settings):
+    return settings["robbing_a_kan"]
+
+def is_under_the_sea(pair_split, hu_num, settings):
+    return settings["under_the_sea"]
+
+def is_under_the_river(pair_split, hu_num, settings):
+    return settings["under_the_river"]
+
+def is_double_riichi(pair_split, hu_num, settings):
+    return (settings["riichi"] == 2)
+
+def is_triple_triplets(pair_split, hu_num, settings):
+    triplets = []
+    for meld in pair_split:
+        if len(meld) == 3:
+            if meld[0] == meld[1]:
+                triplets.append(meld[0])
+        elif len(meld) == 4:
+            triplets.append([tile for tile in meld if tile != -1][0])
+    for i in range(9):
+        if i in triplets and (i + 9) in triplets and (i + 18) in triplets:
+            return True
+    return False
+
+def is_three_quads(pair_split, hu_num, settings):
+    quad_len = 0
+    for meld in pair_split:
+        if len(meld) == 4:
+            quad_len += 1
+    return (quad_len == 3)
+
+def is_all_triplets(pair_split, hu_num, settings):
+    for meld in pair_split:
+        if len(meld) == 3:
+            if meld[0] != meld[1] or meld[1] != meld[2]:
+                return False
+    return True
 
 yaku_han_list = {
     "yaku.pinfu": {
@@ -170,11 +243,11 @@ yaku_han_list = {
     }
 }
 
-def yaku_han(hand, furo, hu, setting):
-    setting["player_wind_num"] = convert_tile_to_num(setting["player_wind"])
-    setting["phase_wind_num"] = convert_tile_to_num(setting["phase_wind"])
-    setting["dora_num"] = convert_hand_to_num(setting["dora"])
-    setting["ura_dora_num"] = convert_hand_to_num(setting["ura_dora"])
+def yaku_han(hand, furo, hu, settings):
+    settings["player_wind_num"] = convert_tile_to_num(settings["player_wind"])
+    settings["phase_wind_num"] = convert_tile_to_num(settings["phase_wind"])
+    settings["dora_num"] = convert_hand_to_num(settings["dora"])
+    settings["ura_dora_num"] = convert_hand_to_num(settings["ura_dora"])
 
     hand_num = convert_hand_to_num(hand)
     furo_num = [convert_hand_to_num(meld) for meld in furo]
@@ -183,6 +256,8 @@ def yaku_han(hand, furo, hu, setting):
     if len(hand_num) % 3 == 1:
         hand_num.append(hu_num)
         all_tile.append(hu)
+    
+    menzenqing = is_menzenqing(hand_num, furo_num, hu_num)
 
     pair_splits = seven_pair_split(hand_num, furo_num, False, False) + common_pair_split(hand_num, furo_num)
 
@@ -199,11 +274,11 @@ def yaku_han(hand, furo, hu, setting):
 
         for yaku_han_name in yaku_han_list:
             yaku_han = yaku_han_list[yaku_han_name]
-            if yaku_han["allow_furo"] == 0 and len(furo_num) > 0:
+            if yaku_han["allow_furo"] == 0 and not menzenqing:
                 continue
-            if yaku_han["validator"](pair_split, hu_num, setting):
+            if yaku_han["validator"](pair_split, hu_num, settings):
                 update_han = yaku_han["han"]
-                if yaku_han["allow_furo"] == -1 and len(furo_num) > 0:
+                if yaku_han["allow_furo"] == -1 and not menzenqing:
                     update_han -= 1
                 han += update_han
                 yakuman += yaku_han["yakuman"]
@@ -224,9 +299,9 @@ def yaku_han(hand, furo, hu, setting):
         red_dora_num = 0
         ura_dora_num = 0
         for tile in all_tile:
-            if tile in setting["dora"]:
+            if tile in settings["dora"]:
                 dora_num += 1
-            if tile in setting["ura_dora"]:
+            if tile in settings["ura_dora"]:
                 ura_dora_num += 1
             if tile in ["0m", "0p", "0s"]:
                 red_dora_num += 1
@@ -236,7 +311,7 @@ def yaku_han(hand, furo, hu, setting):
         if red_dora_num:
             max_han += red_dora_num
             max_yakus.append(("yaku.red_dora", red_dora_num))
-        if setting["riichi"]:
+        if settings["riichi"]:
             max_han += ura_dora_num
             max_yakus.append(("yaku.ura_dora", ura_dora_num))
         return {

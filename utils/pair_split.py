@@ -1,3 +1,73 @@
+class Meld:
+    def __init__(self, num: int, furo: bool):
+        self.num = num
+        self.furo = furo
+    
+    def __eq__(self, other):
+        if isinstance(other, Meld):
+            return len(self) == len(other) and self.num == other.num
+        if isinstance(other, list):
+            return list(self) == other
+        return False
+    
+    def __lt__(self, other):
+        if not isinstance(other, Meld):
+            raise ValueError(f"Cannot compare Meld and {type(other)}")
+        if len(self) < len(other):
+            return True
+        if len(self) == len(other):
+            if self.num < other.num:
+                return True
+            if self.num == other.num:
+                if isinstance(self, Sequence) and not isinstance(self, Triplet):
+                    return True
+        return False
+    
+    def __gt__(self, other):
+        return not self.__lt__(other) and not self.__eq__(other)
+    
+    def __le__(self, other):
+        return self.__lt__(other) or self.__eq__(other)
+    
+    def __ge__(self, other):
+        return not self.__lt__(other)
+
+class Pair(Meld):
+    def __len__(self):
+        return 2
+    
+    def __getitem__(self, index):
+        if index >= 0 and index < 2:
+            return self.num
+        raise IndexError("Index out of range")
+
+class Triplet(Meld):
+    def __len__(self):
+        return 3
+    
+    def __getitem__(self, index):
+        if index >= 0 and index < 3:
+            return self.num
+        raise IndexError("Index out of range")
+
+class Sequence(Meld):
+    def __len__(self):
+        return 3
+    
+    def __getitem__(self, index):
+        if index >= 0 and index < 3:
+            return self.num + index
+        raise IndexError("Index out of range")
+    
+class Quad(Meld):
+    def __len__(self):
+        return 4
+    
+    def __getitem__(self, index):
+        if index >= 0 and index < 4:
+            return self.num
+        raise IndexError("Index out of range")
+
 def seven_pair_split(hand, furo, allow_same_pair=True, allow_furo=False):
     """Split a hand into seven pairs and the rest of the tiles.
 
@@ -56,13 +126,24 @@ def common_pair_split(hand, furo):
     for tile in hand:
         tile_count[tile] += 1
             
-    pairs = furo.copy()
+    pairs = []
+    for meld in furo:
+        if len(meld) == 3:
+            if meld[0] == meld[1]:
+                pairs.append(Triplet(meld[0], True))
+            else:
+                pairs.append(Sequence(min(meld), True))
+        elif len(meld) == 4:
+            if -1 in meld:
+                pairs.append(Triplet([tile for tile in meld if tile != -1][0], False))
+            else:
+                pairs.append(Triplet(meld[0], True))
     
     def find_melds(last_tile=0):
         if len(pairs) == 5:
             res = pairs.copy()
             # sort: first is pair, then melds in ascending order
-            yield sorted(res, key=lambda x: (len(x), x))
+            yield sorted(res)
             return
         
         for tile in range(last_tile, 34):
@@ -73,7 +154,7 @@ def common_pair_split(hand, furo):
             # Check for triplet
             if count >= 3:
                 tile_count[tile] -= 3
-                pairs.append([tile, tile, tile])
+                pairs.append(Triplet(tile, False))
                 yield from find_melds(tile)
                 tile_count[tile] += 3
                 pairs.pop()
@@ -85,7 +166,7 @@ def common_pair_split(hand, furo):
                     tile_count[tile] -= 1
                     tile_count[tile + 1] -= 1
                     tile_count[tile + 2] -= 1
-                    pairs.append([tile, tile + 1, tile + 2])
+                    pairs.append(Sequence(tile, False))
                     yield from find_melds(tile)
                     tile_count[tile] += 1
                     tile_count[tile + 1] += 1
@@ -97,7 +178,7 @@ def common_pair_split(hand, furo):
             count = tile_count[tile]
             if count >= 2:
                 tile_count[tile] -= 2
-                pairs.append([tile, tile])
+                pairs.append(Pair(tile, False))
                 yield from find_melds(0)
                 tile_count[tile] += 2
                 pairs.pop()
