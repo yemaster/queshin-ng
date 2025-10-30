@@ -19,7 +19,7 @@ def convert_tile_to_num(tile):
     if suit != 'z' and (number < 0 or number > 9):
         raise ValueError("Invalid tile number: {}".format(number))
     if suit == 'z' and number >= 5:
-        number = 12 - number
+        number = 12 - number  # 5z 6z 7z 是白发中，但是 31 32 33 是中发白
     return suit_dict[suit] + (number - 1 if number != 0 else 4)
 
 def convert_hand_to_num(hand):
@@ -34,7 +34,26 @@ def convert_hand_to_num(hand):
     return [convert_tile_to_num(tile) for tile in hand]
 
 def is_pinfu(pair_split, hu_num, setting):
-    """Check is normal pinfu."""
+    """Check is pinfu.
+    
+    Args:
+        pair_split: number[][] 分割好的牌型
+        hu_num: 胡的牌（数字形式）
+        setting: 设置信息，包含以下字段：
+            dora: str[] 宝牌列表
+            dora_num: number[] 宝牌数字列表
+            ura_dora: str[] 里宝牌列表
+            ura_dora_num: number[] 里宝牌数字列表
+            riichi: boolean 是否立直
+            player_wind: str 自风
+            player_wind_num: number 自风数字
+            phase_wind: str 场风
+            phase_wind_num: number 场风数字
+            round: number 第几巡
+    
+    Returns:
+        bool
+    """
     # One pair and four melds
     if len(pair_split) != 5:
         return False
