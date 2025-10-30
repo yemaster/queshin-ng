@@ -18,6 +18,8 @@ def convert_tile_to_num(tile):
         raise ValueError("Invalid honor tile number: {}".format(number))
     if suit != 'z' and (number < 0 or number > 9):
         raise ValueError("Invalid tile number: {}".format(number))
+    if suit == 'z' and number >= 5:
+        number = 12 - number
     return suit_dict[suit] + (number - 1 if number != 0 else 4)
 
 def convert_hand_to_num(hand):
@@ -31,8 +33,8 @@ def convert_hand_to_num(hand):
     
     return [convert_tile_to_num(tile) for tile in hand]
 
-def is_normal(pair_split, hu_num, setting):
-    """Check is normal agari."""
+def is_pinfu(pair_split, hu_num, setting):
+    """Check is normal pinfu."""
     # One pair and four melds
     if len(pair_split) != 5:
         return False
@@ -60,13 +62,92 @@ def is_normal(pair_split, hu_num, setting):
     
     return False
 
+def is_tanyao(pair_split, hu_num, setting):
+    disallow_nums = [0, 8, 9, 17, 18, 26, 27, 28, 29, 30, 31, 32, 33]
+    for meld in pair_split:
+        for tile in meld:
+            if tile in disallow_nums:
+                return False
+    return True
+
+def is_yakuhai_player_wind(pair_split, hu_num, setting):
+    for meld in pair_split:
+        if len(meld) >= 3:
+            if all([tile == setting["player_wind_num"] for tile in meld]):
+                return True
+    return False
+
+def is_yakuhai_phase_wind(pair_split, hu_num, setting):
+    for meld in pair_split:
+        if len(meld) >= 3:
+            if all([tile == setting["phase_wind_num"] for tile in meld]):
+                return True
+    return False
+
+def is_yakuhai_chuu(pair_split, hu_num, setting):
+    for meld in pair_split:
+        if len(meld) >= 3:
+            if all([tile == 31 for tile in meld]):
+                return True
+    return False
+
+def is_yakuhai_hatsu(pair_split, hu_num, setting):
+    for meld in pair_split:
+        if len(meld) >= 3:
+            if all([tile == 32 for tile in meld]):
+                return True
+    return False
+
+def is_yakuhai_shiro(pair_split, hu_num, setting):
+    for meld in pair_split:
+        if len(meld) >= 3:
+            if all([tile == 33 for tile in meld]):
+                return True
+    return False
+
 
 yaku_han_list = {
-    "yaku.pinghu": {
+    "yaku.pinfu": {
         "han": 1,
         "yakuman": 0,
-        "validator": is_normal,
+        "validator": is_pinfu,
         "allow_furo": 0,
+    },
+    "yaku.tanyao": {
+        "han": 1,
+        "yakuman": 0,
+        "validator": is_tanyao,
+        "allow_furo": 1,
+    },
+    "yaku.yakuhai.player_wind": {
+        "han": 1,
+        "yakuman": 0,
+        "validator": is_yakuhai_player_wind,
+        "allow_furo": 1,
+    },
+    "yaku.yakuhai.phase_wind": {
+        "han": 1,
+        "yakuman": 0,
+        "validator": is_yakuhai_phase_wind,
+        "allow_furo": 1,
+    },
+    "yaku.yakuhai.chuu": {
+        "han": 1,
+        "yakuman": 0,
+        "validator": is_yakuhai_chuu,
+        "allow_furo": 1,
+    },
+    "yaku.yakuhai.hatsu": {
+        "han": 1,
+        "yakuman": 0,
+        "validator": is_yakuhai_hatsu,
+        "allow_furo": 1,
+    },
+    "yaku.yakuhai.shiro": {
+        "han": 1,
+        "yakuman": 0,
+        "validator": is_yakuhai_shiro,
+        "allow_furo": 1,
     }
 }
 

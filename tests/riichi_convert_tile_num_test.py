@@ -38,9 +38,9 @@ class TestConvertTileNum(unittest.TestCase):
             "2z": 28,
             "3z": 29,
             "4z": 30,
-            "5z": 31,
+            "5z": 33,
             "6z": 32,
-            "7z": 33,
+            "7z": 31,
         }
         for tile_str, expected_num in test_cases.items():
             with self.subTest(tile_str=tile_str):
