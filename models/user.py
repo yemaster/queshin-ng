@@ -63,6 +63,3 @@ class Record(Base):
     # 关系
     room = relationship("Room", back_populates="records", foreign_keys="[Record.room_id]")
 
-async def end_game():
-    
-async def end_round():
