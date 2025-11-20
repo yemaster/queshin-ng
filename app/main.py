@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 
 # 导入本地模块
 from app.database import engine, Base, AsyncSessionLocal
-from app.routers import auth
+from app.routers import auth,lobby
 from app.security import decode_access_token
 from app.game_manager import room_manager
 from app.models import Room, PlayerInRoom, RoomStatus, User, Record
@@ -18,6 +18,7 @@ app = FastAPI()
 
 # 挂载认证路由
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+app.include_router(lobby.router, prefix="/api/lobby", tags=["lobby"])
 
 # 挂载 Socket.IO
 socket_app = socketio.ASGIApp(sio, app)
